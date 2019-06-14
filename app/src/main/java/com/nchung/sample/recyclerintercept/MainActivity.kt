@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.SimpleItemAnimator
+import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -14,14 +15,16 @@ class MainActivity : AppCompatActivity() {
         recycler_parent.layoutManager = LinearLayoutManager(this)
         recycler_parent.adapter = ParentAdapter(
             DataCreator(),
-            onClick = { parent ->
-                parent.isCheckAll = !parent.isCheckAll
+            onParentClick = {
                 val adapter = recycler_parent.adapter as ParentAdapter
-                adapter.setCheckedAll(parent)
+                it.isCheckAll = !it.isCheckAll
+                adapter.setCheckedAll(it)
+                Log.e("Click", "${adapter.countItemsChecked()}")
             },
-            onChildClick = { parent ->
+            onChildClick = {
                 val adapter = recycler_parent.adapter as ParentAdapter
-                adapter.setChecked(parent)
+                adapter.setChecked(it)
+                Log.e("Click", "${adapter.countItemsChecked()}")
             }
         )
         (recycler_parent.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false

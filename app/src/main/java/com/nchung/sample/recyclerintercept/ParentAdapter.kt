@@ -11,47 +11,56 @@ import android.widget.FrameLayout
 
 class ParentAdapter(
     private val parents: List<Parent>,
-    private val onClick: (Parent) -> Unit,
+    private val onParentClick: (Parent) -> Unit,
     private val onChildClick: (Parent) -> Unit
-) : RecyclerView.Adapter<ParentAdapter.ViewHolder>() {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_parent, parent, false))
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    override fun getItemCount() = parents.size
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bindData(parents[position], onClick, onChildClick)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = when (viewType) {
+        0 -> HeaderHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_header, parent, false))
+        else -> ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_parent, parent, false))
     }
+
+    override fun getItemCount() = parents.size + 1
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (holder is ViewHolder) holder.bindData(parents[position - 1])
+    }
+
+    override fun getItemViewType(position: Int) = if (position == 0) 0 else 1
 
     fun setCheckedAll(parent: Parent) {
         parent.childs.map { it.isChecked = parent.isCheckAll }
-        notifyItemChanged(parents.indexOf(parent))
+        setChecked(parent)
     }
 
-    fun setChecked(parent: Parent) {
-        notifyItemChanged(parents.indexOf(parent))
-    }
+    fun setChecked(parent: Parent) = notifyItemChanged(parents.indexOf(parent) + 1)
+
+    fun getItemsChecked() = parents.map(Parent::getChildChecked).flatten()
+
+    fun countItemsChecked() = getItemsChecked().size
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val container = itemView.findViewById<FrameLayout>(R.id.name_container)
         private val checkBox = itemView.findViewById<CheckBox>(R.id.ckb_all)
         private val recyclerView = itemView.findViewById<RecyclerView>(R.id.recycler_child)
 
-        fun bindData(parent: Parent, onClick: (Parent) -> Unit, onChildClick: (Parent) -> Unit) {
+        fun bindData(parent: Parent) {
             checkBox.text = parent.name
             checkBox.isChecked = parent.isCheckAll
+            container.setOnClickListener {
+                onParentClick(parent)
+            }
             recyclerView.layoutManager = GridLayoutManager(itemView.context, 1, RecyclerView.HORIZONTAL, false)
             recyclerView.adapter = ChildAdapter(parent.childs) { child ->
-                child.isChecked = !child.isChecked
                 val adapter = recyclerView.adapter as ChildAdapter
+                child.isChecked = !child.isChecked
                 adapter.setChecked(child)
                 parent.isCheckAll = adapter.isCheckedAll()
                 onChildClick(parent)
             }
             (recyclerView.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
-            container.setOnClickListener {
-                onClick(parent)
-            }
         }
     }
+
+    inner class HeaderHolder(view: View) : RecyclerView.ViewHolder(view)
 }
